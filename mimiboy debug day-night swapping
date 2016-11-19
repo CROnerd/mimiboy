@@ -1,0 +1,405 @@
+#define RST 7
+#define CE  8
+#define DC  9
+#define DIN  10
+#define CLK  11
+ 
+#include "font.h";
+ 
+int up=22;
+int down=23;
+int left=25;
+int right=24;
+int keyA=2;
+int keyB=4;
+int Xp=20;
+int Yp=5;
+int Xpick=55;
+int Ypick=3;
+int pickSpawn=1;
+int heading=0;
+int ammohead=0;
+int ammoSpawn=0;
+int Xammo;
+int Yammo;
+int jumpPower=0;
+int jumpDelay=0;
+int jumpAvl=0;
+int ammo=0;
+int lif=5;
+int Yc=2;
+int Xblock1=50;
+int Yblock1=3;
+int Xblock2=60;
+int Yblock2=3;
+int Xblock3=20;
+int Yblock3=2;
+int Xblock4=25;
+int Yblock4=2;
+int Xblock5=30;
+int Yblock5=2;
+int Xenemy=25;
+int Yenemy=1;
+int daytime=0;
+int light=255;
+int day=1;
+ 
+void LcdWriteString(char *characters)
+{
+  while(*characters) LcdWriteCharacter(*characters++);
+}
+ 
+void LcdWriteCharacter(char character)
+{
+  for(int i=0; i<5; i++) {
+    LcdWriteData(ASCII[character - 0x20][i]);
+  }
+  LcdWriteData(0x00);
+}
+ 
+ 
+void LcdWriteData(byte dat)
+{
+  digitalWrite(DC, HIGH);
+  digitalWrite(CE, LOW);
+  shiftOut(DIN, CLK, MSBFIRST, dat);
+  digitalWrite(CE, HIGH);
+}
+ 
+void LcdXY(int x, int y)
+{
+  LcdWriteCmd(0x80 | x);
+  LcdWriteCmd(0x40 | y);
+}
+ 
+void LcdWriteCmd(byte cmd)
+{
+  digitalWrite(DC, LOW);
+  digitalWrite(CE, LOW);
+  shiftOut(DIN, CLK, MSBFIRST, cmd);
+  digitalWrite(CE, HIGH);
+}
+int daytimestart;
+
+ void gameplay() {
+  daytime=millis();
+char string[8];
+  analogWrite(13, light);
+if(day==1 && daytime-daytimestart>=30000) {
+  daytime=daytimestart;
+  day=0;
+}
+
+if(day==0 && daytime-daytimestart>=15000) {
+  daytime=daytimestart;
+  day=1;
+}
+if(day==0 && light != 0){
+  light=light-15;
+}
+
+if(day==1 && light != 255){
+  light=light+15;
+}
+if(light>=128) {
+  LcdWriteCmd(0x0C);
+}
+
+if(light<=127) {
+  LcdWriteCmd(0x0D);
+}
+ 
+  if(digitalRead(left)==0){
+   Xp--;
+   heading=0;
+  }
+    if(digitalRead(right)==0){
+   Xp++;
+   heading=1;
+  }
+ 
+  if(Xp>Xpick-6 && Xp<Xpick+2 && Yp==Ypick || Xp>Xblock1-6 && Xp<Xblock1+2 && Yp==Yblock1 || Xp>Xblock2-8 && Xp<Xblock2+4 && Yp==Yblock2 || Xp>Xblock3-5 && Xp<Xblock5+4 && Yp==Yblock4) {
+  Yp--;
+}
+ 
+ 
+      if(digitalRead(keyA)==0 && jumpAvl==1) {
+   jumpPower=3;
+   jumpAvl=0;
+  }
+     if(digitalRead(keyB)==0 && ammo > 0 && ammoSpawn==0){
+     ammo--;
+     Xammo=Xp;
+     Yammo=Yp;
+     ammoSpawn=1;
+     }
+
+ 
+     if(ammoSpawn==1){
+     ammohead=heading;
+     if(ammohead==0) {
+      Xammo=Xammo-2;
+     
+     }
+     if(ammohead==1) {
+      Xammo=Xammo+2;
+     
+     }
+     if(Xammo<0 || Xammo>79) {
+      ammoSpawn=0;
+for(int i=0; i<504; i++) LcdWriteData(0x00);
+     }
+     }
+ 
+  if(Xp>Xpick-7 && Xp<Xpick+3 && Yp==Ypick+1 ) {
+if(pickSpawn==1){
+       for(int i=0; i<504; i++) LcdWriteData(0x00);
+pickSpawn=0;
+ammo=ammo+5;
+}
+jumpPower=0;
+  }
+ 
+if(Xp>Xblock1-6 && Xp<Xblock1+2 && Yp==Yblock1+1 || Xp>Xblock2-8 && Xp<Xblock2+4 && Yp==Yblock2+1 || Xp>Xblock3-6 && Xp<Xblock5+4 && Yp==Yblock3+1) {
+  jumpPower=0;
+}
+ 
+  if(ammo==0) {
+ pickSpawn=1;
+  }
+ 
+  if(Yp==5 || Xp>=Xblock1-5 && Xp<=Xblock2+5 && Yp==Ypick-1 || Xp>=Xblock3-5 && Xp<=Xblock5 && Yp==Yblock4-1){
+  jumpAvl=1;
+  }
+
+  if(Xp==Xblock3-5 && Yp==Yblock4) {
+  Xp--;
+  }
+   if(Xp==Xblock5+4 && Yp==Yblock4) {
+  Xp++;
+  }
+ 
+  if(jumpPower !=0 && jumpDelay==0){
+  LcdXY(Xp,Yp);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0X00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+    Yp--;
+    jumpPower--;
+  }
+  if(Yp<5 && jumpPower==0 && jumpDelay==0) {
+      LcdXY(Xp,Yp);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0X00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+Yp++;
+  }
+ 
+    if(Xp<=0){
+   Xp=0;
+  }
+    if(Xp>=78){
+   Xp=78;
+  }
+ 
+if(Yp<0) {
+  Yp=0;
+}
+ 
+  if(jumpDelay==0){
+    jumpDelay=4;
+  }
+ 
+  LcdXY(Xp,Yp);
+  LcdWriteData(0x00);
+LcdWriteData(0x120);
+LcdWriteData(0x97);
+LcdWriteData(0x7F);
+LcdWriteData(0X97);
+LcdWriteData(0x120);
+LcdWriteData(0x00);
+jumpDelay--;
+LcdXY(79,0);
+LcdWriteString(dtostrf(ammo,0,0,string));
+if(pickSpawn==1){
+LcdXY(Xpick,Ypick);
+ 
+LcdWriteData(0x1F);
+LcdWriteData(0x11);
+LcdWriteData(0x15);
+LcdWriteData(0x1D);
+LcdWriteData(0x1F);
+ 
+}
+LcdXY(Xblock1-5,Yblock1);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x1F);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x1F);
+LcdXY(Xblock2,Yblock2);
+LcdWriteData(0x1F);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x1F);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdXY(Xblock3,Yblock3);
+LcdWriteData(0x1F);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x1F);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdXY(Xblock4,Yblock4);
+LcdWriteData(0x1F);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x1F);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdXY(Xblock5,Yblock5);
+LcdWriteData(0x1F);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x13);
+LcdWriteData(0x1F);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdXY(Xblock3-5,Yblock3);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+
+
+
+if(pickSpawn==0){
+  LcdXY(Xpick,Ypick);
+LcdWriteData(0x1F);
+LcdWriteData(0x11);
+LcdWriteData(0x11);
+LcdWriteData(0x11);
+LcdWriteData(0x1F);
+ 
+}
+if (ammoSpawn==1) {
+LcdXY(Xammo,Yammo);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+LcdWriteData(0x38);
+LcdWriteData(0x38);
+LcdWriteData(0x38);
+LcdWriteData(0x38);
+LcdWriteData(0x10);
+LcdWriteData(0x00);
+LcdWriteData(0x00);
+}
+delay(20);
+}
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(RST, OUTPUT);
+  pinMode(CE, OUTPUT);
+  pinMode(DC, OUTPUT);
+  pinMode(DIN, OUTPUT);
+  pinMode(CLK, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(up, INPUT_PULLUP);
+  pinMode(down, INPUT_PULLUP);
+  pinMode(left, INPUT_PULLUP);
+  pinMode(right, INPUT_PULLUP);
+  pinMode(keyA, INPUT_PULLUP);
+  pinMode(keyB, INPUT_PULLUP);
+  digitalWrite(12, HIGH);
+  analogWrite(13, light);
+    digitalWrite(RST, LOW);
+  digitalWrite(RST, HIGH);
+ 
+ 
+  LcdWriteCmd(0x21);  
+  LcdWriteCmd(0x96);
+  LcdWriteCmd(0x03);
+  LcdWriteCmd(0x13);
+  LcdWriteCmd(0x20);
+  LcdWriteCmd(0x0C);
+ 
+  for(int i=0; i<504; i++) LcdWriteData(0x00); // clear LCD
+}
+ 
+ 
+ void loop () {
+ 
+  LcdXY(20,0);
+  LcdWriteString("DEBUG");
+ 
+  LcdXY(18,2);
+  LcdWriteString("start");
+ 
+  LcdXY(18,3);
+  LcdWriteString("setup");
+ 
+  LcdXY(18,4);
+  LcdWriteString("modes");
+ 
+  LcdXY(0,Yc);
+  LcdWriteString(">>>");
+ 
+ 
+  LcdXY(18,5);
+  LcdWriteString("credits");
+ 
+    if (digitalRead(up)==0){
+     delay(50);
+      Yc--;
+      for(int i=0; i<504; i++) LcdWriteData(0x00); // clear LCD
+    }
+    if (digitalRead(down)==0){
+       delay(50);
+      Yc++;  
+      for(int i=0; i<504; i++) LcdWriteData(0x00); // clear LCD
+    }
+    if(Yc<2) Yc=5;
+    if(Yc>5) Yc=2;
+  if (digitalRead(keyA)==0 && Yc==2){
+     for(int i=0; i<504; i++) LcdWriteData(0x00); // clear LCD
+  while(lif != 0){
+  Serial.println(day);
+  Serial.println(light);
+
+  gameplay();
+  }
+ 
+  }
+ }
